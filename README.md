@@ -13,7 +13,19 @@ Hỗ trợ đầy đủ:
 
 ---
 
-## Yêu cầu hệ thống
+## Dùng trên GitHub (không cần cài gì)
+
+1. Vào tab **Actions** của repo này.
+2. Chọn workflow **「Trộn đề trắc nghiệm」** → bấm **Run workflow**.
+3. Điền số mã đề, seed… rồi bấm **Run workflow**.
+4. Đợi khoảng 1–2 phút → vào bản chạy vừa tạo → phần **Artifacts** → tải file `de-thi-pdf`.
+
+**Muốn dùng đề của bạn:**  
+Đặt file `.docx` vào thư mục `input/` (bấm Add file → Upload files), commit, rồi chạy workflow. Nếu thư mục `input/` trống, hệ thống sẽ dùng file mẫu `examples/DeMau.docx`.
+
+---
+
+## Yêu cầu hệ thống (khi chạy trên máy)
 
 | Thành phần | Ghi chú |
 |------------|---------|
