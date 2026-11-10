@@ -1,0 +1,107 @@
+name: Trộn đề trắc nghiệm
+
+on:
+  workflow_dispatch:
+    inputs:
+      so_made:
+        description: 'Số mã đề cần tạo'
+        required: true
+        default: '4'
+        type: string
+      seed:
+        description: 'Seed ngẫu nhiên (giữ nguyên để tái lập kết quả)'
+        required: true
+        default: '42'
+        type: string
+      so_cau_phan1:
+        description: 'Số câu Phần 1 (để trống = lấy hết, hoặc số / khoảng vd 10-15)'
+        required: false
+        default: ''
+        type: string
+      so_cau_phan2:
+        description: 'Số câu Phần 2 (để trống = lấy hết)'
+        required: false
+        default: ''
+        type: string
+      so_cau_phan3:
+        description: 'Số câu Phần 3 (để trống = lấy hết)'
+        required: false
+        default: ''
+        type: string
+      so_cau_phan4:
+        description: 'Số câu Tự luận (để trống = lấy hết)'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  tron-de:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cài Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cài pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
+      - name: Cài thư viện Python
+        run: pip install -r requirements.txt
+
+      - name: Tải file đề gốc (.docx)
+        id: upload
+        uses: actions/upload-artifact@v4
+        # Placeholder – người dùng sẽ dùng workflow_dispatch + artifact upload thủ công
+        # Thực tế GitHub Actions chưa hỗ trợ upload file trực tiếp trên form.
+        # Cách dùng: người dùng đẩy file .docx vào thư mục input/ rồi chạy workflow.
+        continue-on-error: true
+
+      - name: Kiểm tra file đề
+        id: check
+        run: |
+          mkdir -p input ket_qua
+          # Ưu tiên file người dùng đặt trong input/
+          DOCX=$(find input -maxdepth 1 -name '*.docx' | head -1)
+          if [ -z "$DOCX" ]; then
+            # Fallback: dùng file mẫu
+            DOCX="examples/DeMau.docx"
+            echo "⚠ Không thấy file trong thư mục input/ → dùng file mẫu examples/DeMau.docx"
+          else
+            echo "✓ Dùng file: $DOCX"
+          fi
+          echo "docx=$DOCX" >> $GITHUB_OUTPUT
+          ls -la "$DOCX"
+
+      - name: Trộn đề
+        run: |
+          EXTRA_ARGS=""
+          [ -n "${{ inputs.so_cau_phan1 }}" ] && EXTRA_ARGS="$EXTRA_ARGS --so-cau-phan1 ${{ inputs.so_cau_phan1 }}"
+          [ -n "${{ inputs.so_cau_phan2 }}" ] && EXTRA_ARGS="$EXTRA_ARGS --so-cau-phan2 ${{ inputs.so_cau_phan2 }}"
+          [ -n "${{ inputs.so_cau_phan3 }}" ] && EXTRA_ARGS="$EXTRA_ARGS --so-cau-phan3 ${{ inputs.so_cau_phan3 }}"
+          [ -n "${{ inputs.so_cau_phan4 }}" ] && EXTRA_ARGS="$EXTRA_ARGS --so-cau-phan4 ${{ inputs.so_cau_phan4 }}"
+
+          python build_exam.py "${{ steps.check.outputs.docx }}" \
+            --so-made ${{ inputs.so_made }} \
+            --seed ${{ inputs.seed }} \
+            --out-dir ket_qua \
+            $EXTRA_ARGS
+
+      - name: Liệt kê kết quả
+        run: |
+          echo "=== Kết quả ==="
+          ls -lh ket_qua/*.pdf || true
+          find ket_qua -name '*.pdf' | wc -l
+
+      - name: Upload PDF kết quả
+        uses: actions/upload-artifact@v4
+        with:
+          name: de-thi-pdf
+          path: ket_qua/*.pdf
+          if-no-files-found: error
+          retention-days: 7
