@@ -1,0 +1,14 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+.venv
+venv
+ket_qua
+output_data
+_work
+_media
+*.pdf
+*.md
+LICENSE
+examples/*.docx

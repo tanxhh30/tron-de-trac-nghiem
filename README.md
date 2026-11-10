@@ -33,7 +33,7 @@ Hỗ trợ đầy đủ:
 
 ```bash
 # 1. Clone về máy
-git clone https://github.com/<ten-cua-ban>/tron-de-trac-nghiem.git
+git clone https://github.com/tanxhh30/tron-de-trac-nghiem.git
 cd tron-de-trac-nghiem
 
 # 2. Tạo môi trường ảo (khuyến nghị)
@@ -46,6 +46,28 @@ source .venv/bin/activate
 
 # 3. Cài thư viện
 pip install -r requirements.txt
+```
+
+### Cách 2: Dùng Docker (không cần cài Python/pandoc)
+
+Yêu cầu: đã cài [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+```bash
+# Build image (chỉ cần làm 1 lần)
+docker build -t tron-de .
+
+# Chạy giao diện
+docker run --rm -it -p 8765:8765 -v "%cd%":/data tron-de
+# (macOS/Linux đổi "%cd%" thành "$(pwd)")
+```
+
+Sau đó mở trình duyệt vào: **http://127.0.0.1:8765**
+
+Muốn chạy dòng lệnh (trộn nhanh):
+
+```bash
+docker run --rm -v "%cd%":/data -w /data tron-de \
+  python build_exam.py /data/de_goc.docx --so-made 4 --out-dir /data/ket_qua
 ```
 
 ---
