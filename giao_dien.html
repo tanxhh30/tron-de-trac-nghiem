@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trộn đề trắc nghiệm</title>
+<style>
+:root{
+  --bg:#f4f6fa; --card:#fff; --ink:#1f2937; --mut:#6b7280; --line:#e2e6ee;
+  --acc:#2563eb; --acc-d:#1d4ed8; --acc-l:#e8efff; --ok:#15803d; --ok-l:#e6f6ec;
+  --warn:#b45309; --warn-l:#fff4e0; --err:#b91c1c; --err-l:#fdecec; --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#12151b; --card:#1b1f27; --ink:#e5e7eb; --mut:#9aa3b2; --line:#2c3340;
+    --acc:#5b8def; --acc-d:#7aa2f7; --acc-l:#1f2a44; --ok:#4ade80; --ok-l:#14301f;
+    --warn:#fbbf24; --warn-l:#33280f; --err:#f87171; --err-l:#3a1b1b; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+header.top{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:18px;padding:10px 22px}
+header.top h1{font-size:18px;margin:0;white-space:nowrap}
+.steps{display:flex;gap:6px;flex:1}
+.step{border:1px solid var(--line);background:transparent;border-radius:999px;padding:6px 16px;cursor:pointer;color:var(--mut)}
+.step.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.step:disabled{opacity:.45;cursor:not-allowed}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 14px;cursor:pointer}
+.btn:hover{border-color:var(--acc)}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.pri:hover{background:var(--acc-d)}
+.btn.sm{padding:3px 9px;font-size:13px}
+.btn.danger:hover{border-color:var(--err);color:var(--err)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+main{max-width:1180px;margin:0 auto;padding:22px}
+.page{display:none}.page.on{display:block}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-bottom:16px}
+.panel h2{font-size:16px;margin:0 0 12px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:120px}
+.field.grow{flex:1;min-width:260px}
+.field label{font-size:13px;color:var(--mut)}
+input[type=text],input[type=number],select,textarea{border:1px solid var(--line);background:var(--card);border-radius:7px;padding:7px 10px;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--acc-l);border-color:var(--acc)}
+.pick{display:flex;gap:8px}.pick input{flex:1}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{background:var(--acc-l);color:var(--acc-d);border-radius:999px;padding:3px 12px;font-size:13px}
+.warns{margin-top:10px;background:var(--warn-l);color:var(--warn);border-radius:8px;padding:8px 14px;font-size:13px}
+.warns ul{margin:4px 0 0 18px;padding:0}
+.hint{color:var(--mut);font-size:13px}
+table.cnt{border-collapse:collapse;width:100%}
+table.cnt td{padding:5px 8px 5px 0;vertical-align:middle}
+table.cnt td.n{width:150px}
+table.cnt input[type=number]{width:90px}
+.sw{display:flex;gap:18px;flex-wrap:wrap}
+.sw label{display:flex;gap:6px;align-items:center;cursor:pointer}
+details.panel>summary{cursor:pointer;font-weight:600;font-size:16px}
+details.panel[open]>summary{margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 14px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #fff6;border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---------- Chỉnh sửa ---------- */
+.edit{display:grid;grid-template-columns:190px 1fr;gap:16px;align-items:start}
+.side{position:sticky;top:64px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:10px}
+.side h3{margin:4px 6px 8px;font-size:13px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.side button{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;border:0;background:transparent;border-radius:8px;padding:8px 10px;cursor:pointer}
+.side button:hover{background:var(--acc-l)}
+.side button.on{background:var(--acc);color:#fff}
+.dot{color:var(--warn);font-size:12px}
+.side button.on .dot{color:#ffd9a0}
+.workarea{min-width:0}
+.bar{position:sticky;top:55px;z-index:10;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;margin-bottom:12px}
+.bar .r1{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar .spacer{flex:1}
+.palette{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.palette button{min-width:34px;height:30px;border:1px solid var(--line);background:var(--card);border-radius:6px;cursor:pointer;font-size:14px;padding:0 7px}
+.palette button:hover{background:var(--acc-l);border-color:var(--acc)}
+.palette .lbl{font-size:12px;color:var(--mut);align-self:center;margin-right:4px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:14px;align-items:start}
+.pdfpane{position:sticky;top:158px;height:calc(100vh - 175px);background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column}
+.pdfpane .ph{padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px;color:var(--mut);display:flex;justify-content:space-between}
+.pdfpane iframe{flex:1;border:0;width:100%}
+.empty{margin:auto;color:var(--mut);padding:20px;text-align:center}
+.sec-title{margin:18px 2px 8px;font-size:15px;font-weight:700;color:var(--acc-d)}
+.qcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px 12px;margin-bottom:12px}
+.qcard.err{border-color:var(--err)}
+.qh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.qh b{font-size:15px}
+.qh .tag{font-size:12px;background:var(--acc-l);color:var(--acc-d);border-radius:999px;padding:1px 9px}
+.qh .spacer{flex:1}
+.pv{min-height:34px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:4px 8px;margin-bottom:8px;overflow-x:auto;display:flex;align-items:center}
+.pv img{max-width:100%;height:auto;display:block}
+.pv .pvmsg{color:#6b7280;font-size:13px}
+.pv .pverr{color:#b91c1c;font-size:13px;white-space:pre-wrap}
+.qcard label.l{display:block;font-size:12px;color:var(--mut);margin:6px 0 2px}
+.qcard textarea{resize:vertical;min-height:54px;font-family:Consolas,"Cascadia Mono",monospace;font-size:13px;line-height:1.45}
+.opt{display:flex;align-items:center;gap:8px;margin-top:5px}
+.opt .lab{width:22px;font-weight:700;text-align:center}
+.opt input[type=text]{font-family:Consolas,"Cascadia Mono",monospace;font-size:13px}
+.opt label.ok{display:flex;gap:4px;align-items:center;font-size:12px;color:var(--ok);white-space:nowrap;cursor:pointer}
+.opt select{width:92px;flex:none}
+.rawnote{font-size:12px;color:var(--warn);margin-bottom:4px}
+.help{background:var(--acc-l);color:var(--acc-d);border-radius:8px;padding:8px 14px;font-size:13px;margin-bottom:12px}
+.src textarea{width:100%;height:60vh;font-family:Consolas,"Cascadia Mono",monospace;font-size:13px}
+table.da{border-collapse:collapse;width:100%;font-size:13px;background:var(--card)}
+table.da th,table.da td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+table.da th{background:var(--acc-l)}
+/* ---------- Xuất ---------- */
+.exp{list-style:none;margin:0;padding:0}
+.exp li{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.st{width:24px;text-align:center}
+.exp .grow{flex:1}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#111827;color:#fff;border-radius:8px;padding:9px 18px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:99;max-width:80vw}
+.toast.on{opacity:1}.toast.bad{background:#991b1b}
+@media (max-width:980px){.edit{grid-template-columns:1fr}.side{position:static}.split{grid-template-columns:1fr}.pdfpane{position:static;height:70vh}.bar{position:static}}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>📝 Trộn đề trắc nghiệm</h1>
+  <div class="steps">
+    <button class="step on" data-p="1">① Thiết lập</button>
+    <button class="step" data-p="2" disabled>② Chỉnh sửa &amp; xem thử</button>
+    <button class="step" data-p="3" disabled>③ Xuất PDF</button>
+  </div>
+  <button class="btn sm" id="btnQuit" title="Tắt chương trình">Thoát</button>
+</header>
+
+<main>
+<!-- ================= BƯỚC 1 ================= -->
+<section class="page on" id="p1">
+  <div class="panel">
+    <h2>1. File nguồn và nơi lưu kết quả</h2>
+    <div class="row">
+      <div class="field grow"><label>File đề gốc (.docx)</label>
+        <div class="pick"><input type="text" id="docx" placeholder="Bấm “Chọn file…” hoặc dán đường dẫn"><button class="btn" id="bDocx">Chọn file…</button></div></div>
+    </div>
+    <div id="analysis"></div>
+    <div class="row" style="margin-top:12px">
+      <div class="field grow"><label>Thư mục lưu kết quả (file .typ và PDF)</label>
+        <div class="pick"><input type="text" id="outdir" placeholder="Mặc định: thư mục “ket_qua” cạnh file đề"><button class="btn" id="bOut">Chọn thư mục…</button></div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>2. Thông số trộn</h2>
+    <div class="row">
+      <div class="field"><label>Số mã đề</label><input type="number" id="soMade" min="1" max="99" value="4"></div>
+      <div class="field"><label>Mã đề đầu tiên</label><input type="number" id="madeStart" min="0" value="1"></div>
+      <div class="field"><label>Số chữ số của mã đề</label><input type="number" id="madeDigits" min="1" max="6" value="4"></div>
+      <div class="field"><label>Seed ngẫu nhiên</label><input type="number" id="seed" value="42"></div>
+      <div class="field" style="justify-content:flex-end"><div class="sw">
+        <label><input type="checkbox" id="tronCau" checked> Trộn thứ tự câu</label>
+        <label><input type="checkbox" id="tronDA" checked> Trộn thứ tự đáp án</label></div></div>
+    </div>
+    <p class="hint" style="margin:8px 0 0">Seed giữ nguyên thì trộn lại sẽ ra đúng bộ đề cũ. Đổi seed để có bộ đề khác.</p>
+
+    <h2 style="margin-top:18px">Số câu lấy vào mỗi đề</h2>
+    <table class="cnt" id="cntTable"></table>
+  </div>
+
+  <details class="panel">
+    <summary>3. Đầu trang đề thi</summary>
+    <div class="grid2" id="hdrFields"></div>
+  </details>
+
+  <details class="panel">
+    <summary>4. Font chữ và cỡ chữ</summary>
+    <div class="grid2" id="styFields"></div>
+    <p class="hint">Cỡ chữ tính bằng pt (có thể nhập số lẻ như 10.5). Khoảng cách tính bằng em (1 em = cỡ chữ hiện tại; ví dụ 0.62 là mặc định). Font không có trong máy sẽ tự chuyển sang font gần giống.</p>
+  </details>
+
+  <div class="actions">
+    <button class="btn pri" id="bTron">Trộn đề →</button>
+    <button class="btn" id="bMoLai">Mở lại các đề đã trộn trong thư mục này</button>
+    <button class="btn" id="bDauTrang" style="display:none">Cập nhật đầu trang &amp; font cho các đề đã trộn</button>
+    <span class="hint" id="tronMsg"></span>
+  </div>
+</section>
+
+<!-- ================= BƯỚC 2 ================= -->
+<section class="page" id="p2">
+  <div class="edit">
+    <nav class="side"><h3>Mã đề</h3><div id="madeList"></div>
+      <h3 style="margin-top:12px">Khác</h3><div id="otherList"></div></nav>
+    <div class="workarea">
+      <div class="bar">
+        <div class="r1">
+          <b id="curTitle">Mã đề</b>
+          <span class="hint" id="saveState"></span>
+          <span class="spacer"></span>
+          <button class="btn sm" id="bSrc">&lt;/&gt; Xem mã nguồn</button>
+          <button class="btn sm" id="bSave">Lưu</button>
+          <button class="btn sm pri" id="bCompile">Biên dịch &amp; xem cả đề</button>
+        </div>
+        <div class="palette" id="palette"></div>
+      </div>
+      <div id="viewCards">
+        <div class="help">Mỗi câu hiện <b>hình xem thử</b> ngay bên trên ô sửa. Sửa chữ bình thường; phần nằm giữa hai dấu <b>$ … $</b> là công thức — đừng xóa dấu <b>$</b>.
+          Muốn chèn công thức, bấm vào ô cần sửa rồi chọn nút ở thanh ký hiệu phía trên. Sửa xong hình xem thử tự cập nhật, thay đổi tự động được lưu.</div>
+        <div class="split">
+          <div id="cards"></div>
+          <div class="pdfpane"><div class="ph"><span id="pdfName">Bản biên dịch cả đề (PDF)</span><span id="pdfTime"></span></div>
+            <div class="empty" id="pdfEmpty">Bấm <b>“Biên dịch &amp; xem cả đề”</b> để xem toàn bộ đề như khi in.</div>
+            <iframe id="pdfFrame" style="display:none"></iframe></div>
+        </div>
+      </div>
+      <div id="viewSrc" class="src" style="display:none">
+        <div class="help">Chế độ dành cho người rành Typst. Sửa xong bấm <b>Áp dụng</b>. Các dòng bắt đầu bằng <code>// @KEY</code> lưu đáp án đúng — đừng xóa.</div>
+        <textarea id="srcText" spellcheck="false"></textarea>
+        <div class="actions" style="margin-top:8px"><button class="btn pri" id="bSrcApply">Áp dụng</button><button class="btn" id="bSrcBack">Quay lại giao diện thường</button></div>
+      </div>
+      <div id="viewKey" style="display:none">
+        <div class="help">Đáp án đọc từ chính các file .typ nên luôn khớp với đề sau khi bạn sửa, xóa hoặc đổi chỗ câu.</div>
+        <div class="actions" style="margin-bottom:10px"><button class="btn pri" id="bKeyPdf">Biên dịch bảng đáp án (PDF)</button></div>
+        <div class="split"><div id="keyTable"></div>
+          <div class="pdfpane"><div class="ph"><span>Bảng đáp án (PDF)</span></div>
+            <div class="empty" id="keyEmpty">Chưa biên dịch.</div><iframe id="keyFrame" style="display:none"></iframe></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BƯỚC 3 ================= -->
+<section class="page" id="p3">
+  <div class="panel">
+    <h2>Biên dịch tất cả mã đề và bảng đáp án</h2>
+    <p class="hint" style="margin-top:0">Các thay đổi chưa lưu sẽ được lưu trước khi biên dịch.</p>
+    <div class="actions" style="margin-bottom:10px">
+      <button class="btn pri" id="bExport">Biên dịch tất cả</button>
+      <button class="btn" id="bOpenDir">Mở thư mục kết quả</button>
+    </div>
+    <ul class="exp" id="expList"></ul>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const S = { made: [], cur: null, view: 'cards', docs: {}, dirty: {}, outdir: '', focus: null, saveTimer: null };
+
+async function api(path, data){
+  const r = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data||{})});
+  return r.json();
+}
+let toastT;
+function toast(msg, bad){
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast on' + (bad ? ' bad' : '');
+  clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('on'), bad ? 5200 : 2600);
+}
+function el(tag, attrs={}, ...kids){
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs)){
+    if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  kids.flat().forEach(c => e.append(c && c.nodeType ? c : document.createTextNode(c ?? '')));
+  return e;
+}
+
+/* ------------------------------------------------ điều hướng */
+function go(p){
+  $$('.page').forEach(x => x.classList.toggle('on', x.id === 'p'+p));
+  $$('.step').forEach(x => x.classList.toggle('on', x.dataset.p == p));
+  if (p == 3) renderExport();
+  window.scrollTo(0, 0);
+}
+$$('.step').forEach(b => b.addEventListener('click', async () => {
+  if (b.dataset.p != 2 && S.cur) await saveCurrent(true);
+  go(b.dataset.p);
+}));
+
+/* ------------------------------------------------ BƯỚC 1: biểu mẫu */
+const PARTS = [['1','Phần 1 – Trắc nghiệm 4 lựa chọn'],['2','Phần 2 – Đúng/sai'],['3','Phần 3 – Trả lời ngắn'],['4','Phần 4 – Tự luận']];
+const HDR = [['so','Dòng 1 (Sở/Phòng GD)'],['school','Tên trường'],['title','Tên kỳ thi'],['namhoc','Năm học'],['mon','Môn'],['time','Thời gian làm bài'],['het','Dòng cuối đề (để trống nếu không dùng)']];
+const STY = [['noi_dung','Câu hỏi và đáp án'],['dau_trang','Đầu trang đề'],['tieu_muc','Tiêu đề phần (PHẦN 1…)'],['chan_trang','Chân trang'],['bang_dap_an','Bảng đáp án']];
+const GAP = [['gian_dong','Khoảng cách dòng – đề bài (em)','Mặc định 0.62. Tăng để các dòng thưa hơn.'],
+  ['gian_dong_dap_an','Khoảng cách dòng – đáp án (em)','Mặc định 0.95. Tăng nếu phân số/công thức bị đè dòng.'],
+  ['gian_cau','Khoảng cách giữa các câu (em)','Mặc định 1.2.']];
+let AVAIL = {};
+
+function buildForm(def){
+  const tb = $('#cntTable'); tb.innerHTML = '';
+  PARTS.forEach(([k, name]) => {
+    const sel = el('select', {id:'cm'+k, 'data-k':k},
+      el('option', {value:'all', text:'Lấy hết ngân hàng câu hỏi'}),
+      el('option', {value:'n', text:'Đúng N câu'}),
+      el('option', {value:'range', text:'Ngẫu nhiên từ … đến …'}));
+    const a = el('input', {type:'number', min:'0', id:'ca'+k, style:'display:none', placeholder:'N'});
+    const b = el('input', {type:'number', min:'0', id:'cb'+k, style:'display:none', placeholder:'đến'});
+    const upd = () => { a.style.display = sel.value === 'all' ? 'none' : ''; b.style.display = sel.value === 'range' ? '' : 'none';
+      a.placeholder = sel.value === 'range' ? 'từ' : 'N'; saveForm(); };
+    sel.addEventListener('change', upd); a.addEventListener('input', saveForm); b.addEventListener('input', saveForm);
+    tb.append(el('tr', {}, el('td', {class:'n', text:name}), el('td', {}, sel),
+      el('td', {}, a), el('td', {}, b), el('td', {class:'hint', id:'av'+k})));
+    sel._upd = upd;
+  });
+  const hf = $('#hdrFields'); hf.innerHTML = '';
+  HDR.forEach(([k, name]) => hf.append(el('div', {class:'field'}, el('label', {text:name}),
+    el('input', {type:'text', 'data-h':k, value:def.tieu_de[k] || '', oninput:saveForm}))));
+  const sf = $('#styFields'); sf.innerHTML = '';
+  STY.forEach(([k, name]) => sf.append(el('div', {class:'field'}, el('label', {text:name}),
+    el('div', {class:'pick'},
+      el('input', {type:'text', 'data-f':'font_'+k, value:def.dinh_dang['font_'+k], oninput:saveForm}),
+      el('input', {type:'number', step:'0.5', min:'6', max:'40', style:'max-width:84px', 'data-f':'co_'+k, value:def.dinh_dang['co_'+k], oninput:saveForm})))));
+  GAP.forEach(([k, name, tip]) => sf.append(el('div', {class:'field'}, el('label', {text:name}),
+    el('input', {type:'number', step:'0.05', min:'0', max:'5', 'data-f':k, value:def.dinh_dang[k], title:tip, oninput:saveForm}))));
+}
+function collect(){
+  const counts = {};
+  PARTS.forEach(([k]) => {
+    const m = $('#cm'+k).value, a = $('#ca'+k).value, b = $('#cb'+k).value;
+    counts[k] = m === 'all' || a === '' ? null : (m === 'n' ? +a : [+a, b === '' ? +a : +b]);
+  });
+  const tieu_de = {}; $$('[data-h]').forEach(i => tieu_de[i.dataset.h] = i.value);
+  const dinh_dang = {}; $$('[data-f]').forEach(i => dinh_dang[i.dataset.f] = (i.dataset.f.startsWith('co_') || i.dataset.f.startsWith('gian_')) ? +i.value : i.value);
+  return { docx: $('#docx').value.trim(), out_dir: $('#outdir').value.trim(), so_made: +$('#soMade').value || 1,
+    ma_de_bat_dau: +$('#madeStart').value || 0, so_chu_so_made: +$('#madeDigits').value || 4, seed: +$('#seed').value || 0,
+    tron_cau: $('#tronCau').checked, tron_dap_an: $('#tronDA').checked, counts, tieu_de, dinh_dang };
+}
+function saveForm(){ try{ localStorage.setItem('tronde_form', JSON.stringify(collect())); }catch(e){} }
+function loadForm(){
+  let d; try{ d = JSON.parse(localStorage.getItem('tronde_form') || 'null'); }catch(e){}
+  if (!d) return;
+  $('#docx').value = d.docx || ''; $('#outdir').value = d.out_dir || '';
+  [['soMade','so_made'],['madeStart','ma_de_bat_dau'],['madeDigits','so_chu_so_made'],['seed','seed']].forEach(([i,k]) => { if (d[k] != null) $('#'+i).value = d[k]; });
+  $('#tronCau').checked = d.tron_cau !== false; $('#tronDA').checked = d.tron_dap_an !== false;
+  PARTS.forEach(([k]) => { const v = (d.counts||{})[k], sel = $('#cm'+k);
+    if (v == null) sel.value = 'all'; else if (Array.isArray(v)){ sel.value = 'range'; $('#ca'+k).value = v[0]; $('#cb'+k).value = v[1]; }
+    else { sel.value = 'n'; $('#ca'+k).value = v; } sel._upd(); });
+  $$('[data-h]').forEach(i => { if (d.tieu_de && d.tieu_de[i.dataset.h] != null) i.value = d.tieu_de[i.dataset.h]; });
+  $$('[data-f]').forEach(i => { if (d.dinh_dang && d.dinh_dang[i.dataset.f] != null) i.value = d.dinh_dang[i.dataset.f]; });
+}
+['soMade','madeStart','madeDigits','seed','tronCau','tronDA','docx','outdir'].forEach(i => $('#'+i).addEventListener('input', saveForm));
+
+async function pick(kind, input, after){
+  const r = await api('/api/chon', {loai: kind, batdau: input.value});
+  if (!r.ok) return toast(r.loi, true);
+  if (r.path){ input.value = r.path; saveForm(); if (after) after(); }
+}
+$('#bDocx').onclick = () => pick('file', $('#docx'), analyze);
+$('#bOut').onclick = () => pick('dir', $('#outdir'));
+$('#docx').addEventListener('change', analyze);
+
+async function analyze(){
+  const box = $('#analysis'); const p = $('#docx').value.trim();
+  box.innerHTML = ''; if (!p) return;
+  box.append(el('p', {class:'hint', text:'Đang đọc file…'}));
+  const r = await api('/api/phan-tich', {docx: p});
+  box.innerHTML = '';
+  if (!r.ok){ box.append(el('div', {class:'warns', text:r.loi})); return; }
+  AVAIL = r.dem;
+  const d = r.dem;
+  box.append(el('div', {class:'chips'}, el('span', {class:'chip', text:`Tổng ${r.tong} câu`}), el('span', {class:'chip', text:`Phần 1: ${d.p1}`}),
+    el('span', {class:'chip', text:`Phần 2: ${d.p2}`}), el('span', {class:'chip', text:`Phần 3: ${d.p3}`}), el('span', {class:'chip', text:`Tự luận: ${d.tl}`})));
+  if (r.canh_bao.length) box.append(el('div', {class:'warns'}, el('b', {text:'Cần kiểm tra file gốc:'}),
+    el('ul', {}, r.canh_bao.slice(0, 12).map(w => el('li', {text:w})), r.canh_bao.length > 12 ? el('li', {text:`… và ${r.canh_bao.length - 12} mục nữa`}) : '')));
+  [['1','p1'],['2','p2'],['3','p3'],['4','tl']].forEach(([k, a]) => { $('#av'+k).textContent = `(ngân hàng có ${d[a]} câu)`; });
+  if (!$('#outdir').value.trim()){
+    const sep = p.includes('\\') ? '\\' : '/'; $('#outdir').value = p.slice(0, p.lastIndexOf(sep) + 1) + 'ket_qua';
+  }
+}
+
+function afterTron(r){
+  S.made = r.made.map(m => m.made); S.docs = {}; S.dirty = {}; S.outdir = r.out_dir;
+  $$('.step').forEach(b => b.disabled = false);
+  $('#bDauTrang').style.display = '';
+  buildSide(); selectMade(S.made[0]); go(2);
+}
+$('#bTron').onclick = async () => {
+  const c = collect();
+  if (!c.docx) return toast('Hãy chọn file đề gốc (.docx) trước.', true);
+  if (S.made.length && Object.values(S.dirty).some(Boolean) && !confirm('Có chỗ bạn đã sửa chưa lưu. Trộn lại sẽ ghi đè các file .typ. Tiếp tục?')) return;
+  if (S.made.length && !confirm('Trộn lại sẽ GHI ĐÈ các file .typ đã có (kể cả phần bạn đã chỉnh sửa). Tiếp tục?')) return;
+  const b = $('#bTron'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Đang trộn…';
+  const r = await api('/api/tron', c);
+  b.disabled = false; b.textContent = 'Trộn đề →';
+  if (!r.ok) return toast(r.loi || 'Không trộn được.', true);
+  $('#tronMsg').textContent = ''; afterTron(r);
+};
+$('#bMoLai').onclick = async () => {
+  const out = $('#outdir').value.trim(); if (!out) return toast('Hãy nhập thư mục kết quả.', true);
+  const r = await api('/api/mo-lai', {out_dir: out}); if (!r.ok) return toast(r.loi, true);
+  Object.entries(r.tieu_de).forEach(([k, v]) => { const i = $(`[data-h="${k}"]`); if (i) i.value = v; });
+  Object.entries(r.dinh_dang).forEach(([k, v]) => { const i = $(`[data-f="${k}"]`); if (i) i.value = v; });
+  afterTron(r);
+};
+$('#bDauTrang').onclick = async () => {
+  await saveCurrent(true); const c = collect();
+  const r = await api('/api/ap-dung-dau-trang', {tieu_de: c.tieu_de, dinh_dang: c.dinh_dang});
+  if (!r.ok) return toast(r.loi, true);
+  Object.keys(S.docs).forEach(k => delete S.docs[k]); previewCache.clear();
+  toast('Đã cập nhật đầu trang và font cho tất cả các đề.'); if (S.cur) selectMade(S.cur, true);
+};
+$('#btnQuit').onclick = async () => { if (!confirm('Tắt chương trình trộn đề?')) return; await api('/api/thoat'); document.body.innerHTML = '<p style="padding:40px;font-size:18px">Đã tắt chương trình. Bạn có thể đóng tab này.</p>'; };
+
+/* ------------------------------------------------ BƯỚC 2: thanh bên */
+function buildSide(){
+  const ml = $('#madeList'); ml.innerHTML = '';
+  S.made.forEach(m => ml.append(el('button', {'data-m':m, onclick:() => selectMade(m)}, el('span', {text:'Mã đề ' + m}), el('span', {class:'dot', id:'dot'+m, text:''}))));
+  const ol = $('#otherList'); ol.innerHTML = '';
+  ol.append(el('button', {'data-m':'__key', onclick:() => selectMade('__key')}, el('span', {text:'Bảng đáp án'})));
+}
+function markSide(){
+  $$('#madeList button, #otherList button').forEach(b => b.classList.toggle('on', b.dataset.m === S.cur));
+  S.made.forEach(m => { const d = $('#dot'+m); if (d) d.textContent = S.dirty[m] ? '●' : ''; });
+}
+async function selectMade(m, force){
+  if (S.cur && S.cur !== m && S.cur !== '__key') await saveCurrent(true);
+  S.cur = m; markSide();
+  if (m === '__key') return showKey();
+  setView('cards'); $('#curTitle').textContent = 'Mã đề ' + m;
+  $('#pdfFrame').style.display = 'none'; $('#pdfEmpty').style.display = '';
+  if (force || !S.docs[m]){
+    $('#cards').innerHTML = '<p class="hint">Đang tải…</p>';
+    const r = await api('/api/doc', {made: m});
+    if (!r.ok) { $('#cards').innerHTML = ''; return toast(r.loi, true); }
+    S.docs[m] = r.sections;
+  }
+  renderCards();
+}
+function setView(v){
+  S.view = v;
+  $('#viewCards').style.display = v === 'cards' ? '' : 'none';
+  $('#viewSrc').style.display = v === 'src' ? '' : 'none';
+  $('#viewKey').style.display = v === 'key' ? '' : 'none';
+  $('.bar .r1').querySelectorAll('button').forEach(b => b.style.display = v === 'key' ? 'none' : '');
+  $('#palette').style.display = v === 'cards' ? '' : 'none';
+  $('#saveState').style.display = v === 'key' ? 'none' : '';
+}
+
+/* ------------------------------------------------ thẻ câu hỏi */
+const previewCache = new Map();
+const queue = []; let running = false;
+function enqueue(fn){ queue.push(fn); pump(); }
+async function pump(){
+  if (running) return; running = true;
+  while (queue.length){ try{ await queue.shift()(); }catch(e){} }
+  running = false;
+}
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ io.unobserve(e.target); e.target._render && e.target._render(); } }), {rootMargin:'300px'});
+
+function refreshPreview(pv, item, so, delay){
+  const key = S.cur + '|' + so + '|' + JSON.stringify(item);
+  const card = pv.closest('.qcard');
+  const run = async () => {
+    const cached = previewCache.get(key);
+    if (cached){ show(cached); return; }
+    pv.innerHTML = ''; pv.append(el('span', {class:'pvmsg', text:'Đang dựng hình xem thử…'}));
+    const r = await api('/api/xem-cau', {made: S.cur, item, so});
+    const res = r.ok ? {png: r.png} : {err: (r.goi_y ? r.goi_y + '\n\n' : '') + (r.loi || '')};
+    previewCache.set(key, res); show(res);
+  };
+  function show(res){
+    pv.innerHTML = '';
+    if (res.png){ pv.append(el('img', {src:'data:image/png;base64,' + res.png})); card.classList.remove('err'); }
+    else { pv.append(el('div', {class:'pverr', text:'⚠ Câu này đang có lỗi, chưa hiển thị được.\n' + res.err})); card.classList.add('err'); }
+  }
+  clearTimeout(pv._t);
+  pv._t = setTimeout(() => enqueue(run), delay || 0);
+}
+
+function autosize(t){ t.style.height = 'auto'; t.style.height = Math.max(54, t.scrollHeight + 2) + 'px'; }
+function touch(){
+  S.dirty[S.cur] = true; markSide(); $('#saveState').textContent = 'Đang chờ lưu…';
+  clearTimeout(S.saveTimer); S.saveTimer = setTimeout(() => saveCurrent(true), 2500);
+}
+function bindField(node, item, prop, idx, pv, so){
+  node.addEventListener('focus', () => S.focus = node);
+  node.addEventListener('input', () => {
+    if (idx == null) item[prop] = node.value; else item[prop][idx] = node.value;
+    if (node.tagName === 'TEXTAREA') autosize(node);
+    touch(); refreshPreview(pv, item, so, 900);
+  });
+}
+function renderCards(){
+  const box = $('#cards'); box.innerHTML = ''; S.focus = null;
+  const secs = S.docs[S.cur];
+  secs.forEach((sec, si) => {
+    box.append(el('div', {class:'sec-title', text: sec.items.length ? sec.title.replace(/^PHẦN \d+/, 'PHẦN ' + (secs.filter((s, i) => i < si && s.items.length).length + 1)) : sec.title + ' (đã xóa hết câu)'}));
+    sec.items.forEach((it, ii) => box.append(buildCard(sec, si, it, ii)));
+  });
+  $$('#cards textarea').forEach(autosize);
+}
+function buildCard(sec, si, it, ii){
+  const so = ii + 1, pv = el('div', {class:'pv'});
+  const card = el('div', {class:'qcard'});
+  const move = d => { const a = sec.items; const j = ii + d; if (j < 0 || j >= a.length) return; [a[ii], a[j]] = [a[j], a[ii]]; touch(); renderCards(); };
+  card.append(el('div', {class:'qh'}, el('b', {text:(it.word || 'Câu') + ' ' + so}),
+    el('span', {class:'tag', text: it.kind === 'raw' ? 'mã nguồn' : ({p1:'4 lựa chọn', p2:'đúng–sai', p3:'trả lời ngắn', essay:'tự luận'})[it.kind]}),
+    el('span', {class:'spacer'}),
+    el('button', {class:'btn sm', title:'Chuyển lên', text:'↑', onclick:() => move(-1)}),
+    el('button', {class:'btn sm', title:'Chuyển xuống', text:'↓', onclick:() => move(1)}),
+    el('button', {class:'btn sm danger', title:'Xóa câu này khỏi đề', text:'✕', onclick:() => { if (confirm('Xóa câu này khỏi đề?')){ sec.items.splice(ii, 1); touch(); renderCards(); } }})));
+  card.append(pv);
+  if (it.kind === 'raw'){
+    card.append(el('div', {class:'rawnote', text:'Câu này không nhận dạng được cấu trúc (thường do thiếu đáp án trong file gốc). Bạn có thể sửa trực tiếp nội dung.'}));
+    const t = el('textarea', {spellcheck:'false'}); t.value = it.raw; card.append(t); bindField(t, it, 'raw', null, pv, so);
+  } else {
+    card.append(el('label', {class:'l', text:'Đề bài'}));
+    const t = el('textarea', {spellcheck:'false'}); t.value = it.stem; card.append(t); bindField(t, it, 'stem', null, pv, so);
+    if (it.kind === 'p1') it.options.forEach((c, k) => {
+      const L = 'ABCD'[k], inp = el('input', {type:'text', spellcheck:'false'}); inp.value = c;
+      const rd = el('input', {type:'radio', name:`k${si}_${ii}`, checked: it.key === L, onchange:() => { it.key = L; touch(); }});
+      card.append(el('div', {class:'opt'}, el('span', {class:'lab', text:L}), inp, el('label', {class:'ok', title:'Đáp án đúng'}, rd, 'đúng')));
+      bindField(inp, it, 'options', k, pv, so);
+    });
+    if (it.kind === 'p2'){
+      const flags = (it.key || '0000').padEnd(4, '0').split('');
+      it.options.forEach((c, k) => {
+        const L = 'abcd'[k], inp = el('input', {type:'text', spellcheck:'false'}); inp.value = c;
+        const sel = el('select', {onchange:() => { flags[k] = sel.value; it.key = flags.join(''); touch(); }},
+          el('option', {value:'1', text:'Đúng', selected: flags[k] === '1'}), el('option', {value:'0', text:'Sai', selected: flags[k] !== '1'}));
+        card.append(el('div', {class:'opt'}, el('span', {class:'lab', text:L + ')'}), inp, sel));
+        bindField(inp, it, 'options', k, pv, so);
+      });
+    }
+    if (it.kind === 'p3'){
+      const a = el('input', {type:'text', spellcheck:'false'}); a.value = it.key || '';
+      a.addEventListener('input', () => { it.key = a.value; touch(); });
+      card.append(el('label', {class:'l', text:'Đáp án (chỉ ghi vào bảng đáp án, không in trong đề)'}), a);
+    }
+  }
+  pv._render = () => refreshPreview(pv, it, so, 0);
+  io.observe(pv);
+  return card;
+}
+
+/* ------------------------------------------------ lưu / biên dịch */
+async function saveCurrent(quiet){
+  const m = S.cur; if (!m || m === '__key' || !S.docs[m] || !S.dirty[m]) return true;
+  clearTimeout(S.saveTimer);
+  const r = await api('/api/luu', {made: m, sections: S.docs[m]});
+  if (!r.ok){ toast(r.loi, true); return false; }
+  S.dirty[m] = false; markSide();
+  $('#saveState').textContent = 'Đã lưu ' + new Date().toLocaleTimeString('vi-VN');
+  if (!quiet) toast('Đã lưu.');
+  return true;
+}
+$('#bSave').onclick = () => saveCurrent(false);
+$('#bCompile').onclick = async () => {
+  if (!(await saveCurrent(true))) return;
+  const b = $('#bCompile'); b.disabled = true; b.innerHTML = '<span class="spin"></span>Đang biên dịch…';
+  const r = await api('/api/bien-dich', {made: S.cur});
+  b.disabled = false; b.textContent = 'Biên dịch & xem cả đề';
+  if (!r.ok) return toast('Lỗi biên dịch: ' + (r.goi_y || r.loi), true);
+  showPdf('#pdfFrame', '#pdfEmpty', r.pdf); $('#pdfTime').textContent = new Date().toLocaleTimeString('vi-VN');
+};
+function showPdf(frame, empty, path){
+  $(empty).style.display = 'none'; const f = $(frame); f.style.display = '';
+  f.src = '/pdf?path=' + encodeURIComponent(path) + '&t=' + Date.now();
+}
+
+/* ------------------------------------------------ chế độ mã nguồn */
+$('#bSrc').onclick = async () => {
+  if (!(await saveCurrent(true))) return;
+  const r = await api('/api/nguon', {made: S.cur}); if (!r.ok) return toast(r.loi, true);
+  $('#srcText').value = r.nguon; setView('src');
+};
+$('#bSrcBack').onclick = () => setView('cards');
+$('#bSrcApply').onclick = async () => {
+  const r = await api('/api/luu-nguon', {made: S.cur, nguon: $('#srcText').value}); if (!r.ok) return toast(r.loi, true);
+  previewCache.clear(); await selectMade(S.cur, true); toast('Đã áp dụng mã nguồn.');
+};
+
+/* ------------------------------------------------ bảng đáp án */
+async function showKey(){
+  setView('key'); $('#curTitle').textContent = 'Bảng đáp án';
+  if (S.docs && Object.values(S.dirty).some(Boolean)){ const cur = S.cur; for (const m of S.made){ S.cur = m; await saveCurrent(true); } S.cur = cur; }
+  const r = await api('/api/dap-an'); if (!r.ok) return toast(r.loi, true);
+  const box = $('#keyTable'); box.innerHTML = '';
+  Object.entries(r.dap_an).forEach(([m, k]) => {
+    const rows = [];
+    const p1 = Object.entries(k.part1), p2 = Object.entries(k.part2), p3 = Object.entries(k.part3);
+    if (p1.length) rows.push(el('tr', {}, el('th', {text:'Trắc nghiệm'}), el('td', {text: p1.map(([n, v]) => `${n}.${v || '?'}`).join('   ')})));
+    if (p2.length) rows.push(el('tr', {}, el('th', {text:'Đúng/sai'}), el('td', {text: p2.map(([n, f]) => `Câu ${n}: ` + Object.entries(f).map(([c, v]) => c + ')' + (v ? 'Đ' : 'S')).join(' ')).join('   ')})));
+    if (p3.length) rows.push(el('tr', {}, el('th', {text:'Trả lời ngắn'}), el('td', {text: p3.map(([n, v]) => `${n}.${v || '?'}`).join('   ')})));
+    box.append(el('table', {class:'da', style:'margin-bottom:12px'}, el('tr', {}, el('th', {colspan:'2', text:'Mã đề ' + m})), rows));
+  });
+}
+$('#bKeyPdf').onclick = async () => {
+  const b = $('#bKeyPdf'); b.disabled = true; const r = await api('/api/bang-dap-an'); b.disabled = false;
+  if (!r.ok) return toast('Lỗi: ' + (r.goi_y || r.loi), true);
+  showPdf('#keyFrame', '#keyEmpty', r.pdf);
+};
+
+/* ------------------------------------------------ thanh ký hiệu */
+const PAL = [
+  ['$…$', 'Chèn công thức', '$|$'], ['½', 'Phân số', 'frac(|, )'], ['√', 'Căn bậc hai', 'sqrt(|)'], ['xⁿ', 'Số mũ', '^(|)'], ['xₙ', 'Chỉ số dưới', '_(|)'],
+  ['≤', 'Nhỏ hơn hoặc bằng', '<='], ['≥', 'Lớn hơn hoặc bằng', '>='], ['≠', 'Khác', '!='], ['±', 'Cộng trừ', 'plus.minus'],
+  ['π', 'pi', 'pi'], ['α', 'alpha', 'alpha'], ['β', 'beta', 'beta'], ['Δ', 'Delta', 'Delta'], ['°', 'Độ', 'degree'], ['∞', 'Vô cực', 'infinity'],
+  ['∈', 'Thuộc', 'in'], ['∉', 'Không thuộc', 'in.not'], ['∪', 'Hợp', 'union'], ['∩', 'Giao', 'inter'], ['⇒', 'Suy ra', '=>'], ['⇔', 'Tương đương', '<=>'],
+  ['→', 'Mũi tên', '->'], ['∠', 'Góc', 'angle'], ['⃗v', 'Vectơ', 'arrow(|)'], ['|x|', 'Giá trị tuyệt đối', 'abs(|)'],
+  ['sin', 'sin', 'sin'], ['cos', 'cos', 'cos'], ['tan', 'tan', 'tan'], ['log', 'log', 'log'], ['lim', 'Giới hạn', 'lim_(x -> |)'], ['{ hệ', 'Hệ phương trình', 'cases(|, )'],
+  ['ℝ', 'Tập số thực', 'RR'], ['ℤ', 'Tập số nguyên', 'ZZ'], ['ℕ', 'Tập số tự nhiên', 'NN'], ['∀', 'Với mọi', 'forall'], ['∃', 'Tồn tại', 'exists'],
+];
+(function(){
+  const p = $('#palette'); p.append(el('span', {class:'lbl', text:'Ký hiệu:'}));
+  PAL.forEach(([t, tip, ins]) => p.append(el('button', {title:tip, text:t, onmousedown:e => e.preventDefault(), onclick:() => insertSym(ins, t === '$…$')})));
+})();
+function insertSym(tpl, rawDollar){
+  const f = S.focus; if (!f || !document.body.contains(f)) return toast('Hãy bấm vào ô cần sửa trước, rồi chọn ký hiệu.', true);
+  const pos = f.selectionStart, end = f.selectionEnd, before = f.value.slice(0, pos);
+  const inMath = ((before.match(/(?<!\\)\$/g) || []).length % 2) === 1;
+  let s = tpl;
+  if (!inMath && !rawDollar) s = '$' + s + '$';
+  // Ngoài công thức: thêm dấu cách trước nếu ký tự đứng trước là chữ (tránh dính "là$frac…$")
+  const prev = before.slice(-1);
+  const lead = (!inMath && prev && !/[\s(\[{]/.test(prev)) ? ' ' : '';
+  s = lead + s;
+  const caret = s.indexOf('|'); s = s.replace('|', '');
+  const sel = f.value.slice(pos, end);
+  if (sel && caret >= 0) s = s.slice(0, caret) + sel + s.slice(caret);
+  f.setRangeText(s, pos, end, 'end');
+  const at = caret >= 0 ? pos + caret + sel.length : pos + s.length; f.setSelectionRange(at, at);
+  f.dispatchEvent(new Event('input', {bubbles:true})); f.focus();
+}
+
+/* ------------------------------------------------ BƯỚC 3: xuất */
+function renderExport(){
+  const ul = $('#expList'); ul.innerHTML = '';
+  S.made.forEach(m => ul.append(el('li', {id:'ex'+m}, el('span', {class:'st', text:'·'}), el('span', {class:'grow', text:'Mã đề ' + m + '  →  de_' + m + '.pdf'}), el('span', {class:'hint'}))));
+  ul.append(el('li', {id:'exkey'}, el('span', {class:'st', text:'·'}), el('span', {class:'grow', text:'Bảng đáp án  →  dap_an.pdf'}), el('span', {class:'hint'})));
+}
+function setEx(id, st, note, path){
+  const li = $('#' + id); if (!li) return;
+  li.querySelector('.st').textContent = st; const h = li.querySelector('.hint'); h.innerHTML = '';
+  if (path) h.append(el('a', {href:'/pdf?path=' + encodeURIComponent(path), target:'_blank', text:'Mở PDF'}));
+  else h.textContent = note || '';
+}
+$('#bExport').onclick = async () => {
+  if (S.cur && S.cur !== '__key') await saveCurrent(true);
+  for (const m of S.made){ if (S.dirty[m]){ const c = S.cur; S.cur = m; await saveCurrent(true); S.cur = c; } }
+  const b = $('#bExport'); b.disabled = true; let bad = 0;
+  for (const m of S.made){
+    setEx('ex' + m, '⏳', 'Đang biên dịch…');
+    const r = await api('/api/bien-dich', {made: m});
+    if (r.ok) setEx('ex' + m, '✅', '', r.pdf); else { bad++; setEx('ex' + m, '❌', (r.goi_y || r.loi).slice(0, 160)); }
+  }
+  setEx('exkey', '⏳', 'Đang biên dịch…');
+  const k = await api('/api/bang-dap-an');
+  if (k.ok) setEx('exkey', '✅', '', k.pdf); else { bad++; setEx('exkey', '❌', (k.goi_y || k.loi).slice(0, 160)); }
+  b.disabled = false;
+  toast(bad ? `Xong, có ${bad} file lỗi — quay lại bước 2 để sửa câu bị đánh dấu đỏ.` : 'Đã biên dịch xong tất cả.', !!bad);
+};
+$('#bOpenDir').onclick = async () => { const r = await api('/api/mo-thu-muc', {path: S.outdir || $('#outdir').value}); if (!r.ok) toast(r.loi, true); };
+window.addEventListener('beforeunload', e => { if (Object.values(S.dirty).some(Boolean)){ e.preventDefault(); e.returnValue = ''; } });
+
+/* ------------------------------------------------ khởi động */
+(async function init(){
+  const d = await api('/api/mac-dinh'); buildForm(d); loadForm();
+  if ($('#docx').value) analyze();
+})();
+</script>
+</body>
+</html>
